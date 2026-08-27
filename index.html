@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario Besser Weiss</title>
+
+    <!-- Fuente moderna -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root{
+            --primary-blue: #284577;
+            --accent-red: #8D2224;
+            --bg-light: #F2F2F2;
+            --text-dark: #333333;
+            --border-gray: #E0E0E0;
+
+            --card-max-width: 720px;
+            --container-padding: 20px;
+            --radius: 10px;
+            --shadow-soft: 0 8px 20px rgba(40, 69, 119, 0.06);
+            --shadow-sm: 0 2px 6px rgba(0,0,0,0.06);
+        }
+
+        /* Reset y base */
+        * { box-sizing: border-box; }
+        html,body { height: 100%; margin: 0; padding: 0; }
+        body {
+            font-family: Inter, "Segoe UI", Roboto, system-ui, -apple-system, "Helvetica Neue", Arial;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            -webkit-font-smoothing:antialiased;
+            -moz-osx-font-smoothing:grayscale;
+            padding: 0;
+        }
+
+        /* Header corporativo */
+        .site-header {
+            background: #ffffff;
+            box-shadow: var(--shadow-sm);
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border-gray);
+            position: sticky;
+            top: 0;
+            z-index: 20;
+        }
+        .site-header .header-inner {
+            max-width: calc(var(--card-max-width) + 40px);
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .site-header img {
+            height: 40px;
+            width: auto;
+            display: block;
+        }
+        .site-header .brand {
+            color: var(--primary-blue);
+            font-weight: 600;
+            font-size: 1rem;
+            letter-spacing: 0.2px;
+        }
+
+        /* Layout principal */
+        .page-wrapper {
+            max-width: calc(var(--card-max-width) + 40px);
+            margin: 28px auto;
+            padding: 0 var(--container-padding);
+        }
+
+        /* Tarjeta principal */
+        .card {
+            background: #ffffff;
+            border-top: 5px solid var(--primary-blue);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-soft);
+            padding: 22px;
+            max-width: var(--card-max-width);
+            margin: 0 auto;
+            overflow: hidden;
+        }
+
+        .loading {
+            color: #666;
+            font-size: 0.98rem;
+        }
+
+        .card-title {
+            margin: 0 0 14px 0;
+            font-size: 1.25rem;
+            color: var(--primary-blue);
+            font-weight: 600;
+        }
+
+        /* Imagen del equipo */
+        .image-wrap {
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            margin-bottom: 16px;
+        }
+        .image-wrap img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 8px;
+            display: block;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            object-fit: cover;
+        }
+
+        /* Lista de detalles estilo tabla (flex rows) */
+        .details-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            margin-top: 6px;
+        }
+        .detalle {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-gray);
+            gap: 12px;
+        }
+        .detalle:last-child {
+            border-bottom: none;
+        }
+        .etiqueta {
+            flex: 0 0 40%;
+            color: var(--primary-blue);
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+        .valor {
+            flex: 1 1 60%;
+            color: var(--text-dark);
+            text-align: right;
+            font-weight: 500;
+            word-break: break-word;
+        }
+
+        /* Estado destacado (si aplica) */
+        .tag {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #fff;
+        }
+        .tag.good { background: linear-gradient(90deg, rgba(40,69,119,1), rgba(40,69,119,0.9)); }
+        .tag.warn { background: var(--accent-red); }
+
+        /* Mensajes de error / no encontrado */
+        .message {
+            padding: 16px;
+            background: #fff6f6;
+            border: 1px solid rgba(141,34,36,0.08);
+            color: var(--accent-red);
+            border-radius: 8px;
+        }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .etiqueta { flex-basis: 45%; text-align:left; font-size: 0.92rem; }
+            .valor { font-size: 0.95rem; text-align: right; }
+            .page-wrapper { margin: 18px auto; padding: 0 14px; }
+            .card { padding: 18px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header corporativo (fuera de la tarjeta) -->
+    <header class="site-header" role="banner">
+        <div class="header-inner">
+            <img src="image_1d22f8.png" alt="Besser Weiss Logo" style="height:40px;">
+            <div class="brand">Besser Weiss — Inventario</div>
+        </div>
+    </header>
+
+    <!-- Contenedor principal -->
+    <div class="page-wrapper">
+        <section class="card" aria-labelledby="card-title">
+            <div id="resultado">
+                <p class="loading">Cargando información del equipo...</p>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // 1. Reemplazá esto por el link CSV que copiaste en la Fase 2
+        const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS1iDGOzQQeX7yFydLqosehrJuJ-B6yXEHMevJEbvGi5w7ovEP1j56gcjdtbkWVyQ/pub?gid=1522332190&single=true&output=csv"; 
+        
+        // 2. Nombre exacto de tu app en AppSheet (lo sacamos de la URL que me pasaste antes)
+        const appName = "InventarioBesserWeiss-133446876"; 
+        const nombreTabla = "Activos"; // El nombre de tu pestaña
+
+        async function cargarDatos() {
+            // Obtener el ID de la URL (Ej: tusitio.com/?id=PC-001)
+            const params = new URLSearchParams(window.location.search);
+            const idBuscado = params.get('id');
+
+            const contenedor = document.getElementById('resultado');
+
+            if (!idBuscado) {
+                contenedor.innerHTML = "<p class='message'>No se escaneó ningún equipo. Asegurate de que la URL contenga <code>?id=...</code></p>";
+                return;
+            }
+
+            try {
+                const respuesta = await fetch(urlCSV);
+                if (!respuesta.ok) throw new Error('Network response was not ok');
+                const textoCsv = await respuesta.text();
+                
+                // Dividir el CSV en filas y luego en columnas (método simple, asume CSV sin comillas con comas internas)
+                const filas = textoCsv.trim().split(/\r?\n/).filter(r => r.trim() !== '');
+                if (filas.length === 0) {
+                    contenedor.innerHTML = "<p class='message'>La base de datos está vacía.</p>";
+                    return;
+                }
+
+                const encabezados = filas[0].split(',').map(h => h.trim());
+                let equipoEncontrado = null;
+
+                // Buscar la fila que coincida con el ID
+                for (let i = 1; i < filas.length; i++) {
+                    const columnas = filas[i].split(',').map(c => c.trim());
+                    // Asumimos que el ID está en la primera columna [0]
+                    if (columnas[0] === idBuscado) {
+                        equipoEncontrado = columnas;
+                        break;
+                    }
+                }
+
+                if (equipoEncontrado) {
+                    mostrarEquipo(encabezados, equipoEncontrado);
+                } else {
+                    contenedor.innerHTML = "<p class='message'>Equipo no encontrado en la base de datos.</p>";
+                }
+
+            } catch (error) {
+                console.error(error);
+                contenedor.innerHTML = "<p class='message'>Error al conectar con la base de datos. Revisa la URL CSV o la conexión.</p>";
+            }
+        }
+
+        function mostrarEquipo(encabezados, datos) {
+            // Crear título usando encabezado del ID cuando esté disponible
+            const idLabel = (encabezados && encabezados[0]) ? encabezados[0] : 'ID';
+            let html = `<h2 id="card-title" class="card-title">${idLabel}: ${escapeHtml(datos[0] || '')}</h2>`;
+            
+            // Asumimos que la Foto está en la columna 7 (índice 6, ajustalo según tu Excel)
+            const rutaFoto = datos[7] || ''; 
+            
+            if (rutaFoto && rutaFoto.includes("Images/")) {
+                // Reconstruimos la URL oficial de AppSheet
+                const urlImagen = `https://www.appsheet.com/template/gettablefileurl?appName=${encodeURIComponent(appName)}&tableName=${encodeURIComponent(nombreTabla)}&fileName=${encodeURIComponent(rutaFoto)}`;
+                html += `<div class="image-wrap"><img src="${urlImagen}" alt="Foto del equipo"></div>`;
+            }
+
+            // Construir lista de detalles. Usamos encabezados si existen, sino etiquetas por defecto
+            const mapping = [
+                { idx: 1, label: encabezados[1] || 'Categoría' },
+                { idx: 2, label: encabezados[2] || 'Equipo' },
+                { idx: 3, label: encabezados[3] || 'Especificaciones' },
+                { idx: 5, label: encabezados[5] || 'Estado' }
+            ];
+
+            html += `<div class="details-list">`;
+
+            mapping.forEach(item => {
+                const value = datos[item.idx] || '';
+                let displayValue = escapeHtml(value);
+                // Si es la columna de Estado, aplicar una etiqueta visual
+                if ((item.label && /estado/i.test(item.label)) || item.idx === 5) {
+                    const estadoLower = value.toLowerCase();
+                    if (estadoLower.includes('disponible') || estadoLower.includes('bueno') || estadoLower.includes('funcionando')) {
+                        displayValue = `<span class="tag good">${escapeHtml(value)}</span>`;
+                    } else if (estadoLower.includes('dañado') || estadoLower.includes('malo') || estadoLower.includes('en reparación')) {
+                        displayValue = `<span class="tag warn">${escapeHtml(value)}</span>`;
+                    } else {
+                        displayValue = escapeHtml(value);
+                    }
+                }
+                html += `
+                    <div class="detalle">
+                        <div class="etiqueta">${escapeHtml(item.label)}:</div>
+                        <div class="valor">${displayValue}</div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`; // cierre details-list
+
+            document.getElementById('resultado').innerHTML = html;
+        }
+
+        // Pequeña función de escape para evitar inyección al montar HTML
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        // Iniciar la carga
+        cargarDatos();
+    </script>
+</body>
+</html>
