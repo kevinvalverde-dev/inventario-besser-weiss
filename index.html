@@ -192,18 +192,21 @@
     </div>
 
     <script>
-        // 1. Reemplazá esto por el link CSV que copiaste en la Fase 2
+       // 1. Link CSV
         const urlCSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vS1iDGOzQQeX7yFydLqosehrJuJ-B6yXEHMevJEbvGi5w7ovEP1j56gcjdtbkWVyQ/pub?gid=1522332190&single=true&output=csv"; 
         
-        // 2. Nombre exacto de tu app en AppSheet (lo sacamos de la URL que me pasaste antes)
+        // 2. Nombre exacto de tu app en AppSheet
         const appName = "InventarioBesserWeiss-133446876"; 
-        const nombreTabla = "Activos"; // El nombre de tu pestaña
+        const nombreTabla = "Activos";
+
+        // Función inteligente para separar por comas ignorando las que están dentro de comillas
+        function parseCSVRow(row) {
+            return row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(c => c.replace(/^"|"$/g, '').trim());
+        }
 
         async function cargarDatos() {
-            // Obtener el ID de la URL (Ej: tusitio.com/?id=PC-001)
             const params = new URLSearchParams(window.location.search);
             const idBuscado = params.get('id');
-
             const contenedor = document.getElementById('resultado');
 
             if (!idBuscado) {
@@ -216,20 +219,19 @@
                 if (!respuesta.ok) throw new Error('Network response was not ok');
                 const textoCsv = await respuesta.text();
                 
-                // Dividir el CSV en filas y luego en columnas (método simple, asume CSV sin comillas con comas internas)
                 const filas = textoCsv.trim().split(/\r?\n/).filter(r => r.trim() !== '');
                 if (filas.length === 0) {
                     contenedor.innerHTML = "<p class='message'>La base de datos está vacía.</p>";
                     return;
                 }
 
-                const encabezados = filas[0].split(',').map(h => h.trim());
+                // Usamos la nueva función para los encabezados
+                const encabezados = parseCSVRow(filas[0]);
                 let equipoEncontrado = null;
 
-                // Buscar la fila que coincida con el ID
                 for (let i = 1; i < filas.length; i++) {
-                    const columnas = filas[i].split(',').map(c => c.trim());
-                    // Asumimos que el ID está en la primera columna [0]
+                    // Usamos la nueva función para las columnas de cada fila
+                    const columnas = parseCSVRow(filas[i]);
                     if (columnas[0] === idBuscado) {
                         equipoEncontrado = columnas;
                         break;
@@ -244,46 +246,46 @@
 
             } catch (error) {
                 console.error(error);
-                contenedor.innerHTML = "<p class='message'>Error al conectar con la base de datos. Revisa la URL CSV o la conexión.</p>";
+                contenedor.innerHTML = "<p class='message'>Error al conectar con la base de datos.</p>";
             }
         }
 
         function mostrarEquipo(encabezados, datos) {
-            // Crear título usando encabezado del ID cuando esté disponible
             const idLabel = (encabezados && encabezados[0]) ? encabezados[0] : 'ID';
             let html = `<h2 id="card-title" class="card-title">${idLabel}: ${escapeHtml(datos[0] || '')}</h2>`;
             
-            // Asumimos que la Foto está en la columna 7 (índice 6, ajustalo según tu Excel)
+            // La Foto está en la columna H del Excel (índice 7)
             const rutaFoto = datos[7] || ''; 
             
             if (rutaFoto && rutaFoto.includes("Images/")) {
-                // Reconstruimos la URL oficial de AppSheet
                 const urlImagen = `https://www.appsheet.com/template/gettablefileurl?appName=${encodeURIComponent(appName)}&tableName=${encodeURIComponent(nombreTabla)}&fileName=${encodeURIComponent(rutaFoto)}`;
                 html += `<div class="image-wrap"><img src="${urlImagen}" alt="Foto del equipo"></div>`;
             }
 
-            // Construir lista de detalles. Usamos encabezados si existen, sino etiquetas por defecto
+            // Mapeo corregido de tus columnas en Excel
             const mapping = [
                 { idx: 1, label: encabezados[1] || 'Categoría' },
                 { idx: 2, label: encabezados[2] || 'Equipo' },
                 { idx: 3, label: encabezados[3] || 'Especificaciones' },
-                { idx: 5, label: encabezados[5] || 'Estado' }
+                { idx: 4, label: encabezados[4] || 'TeamViewer' }, // Agregado TeamViewer
+                { idx: 5, label: encabezados[5] || 'Estado' },
+                { idx: 6, label: encabezados[6] || 'Asignado a' }  // Agregado Responsable
             ];
 
             html += `<div class="details-list">`;
 
             mapping.forEach(item => {
                 const value = datos[item.idx] || '';
+                if (!value) return; // Si el campo está vacío en Excel, no lo muestra
+                
                 let displayValue = escapeHtml(value);
-                // Si es la columna de Estado, aplicar una etiqueta visual
-                if ((item.label && /estado/i.test(item.label)) || item.idx === 5) {
+                
+                if (item.idx === 5) {
                     const estadoLower = value.toLowerCase();
-                    if (estadoLower.includes('disponible') || estadoLower.includes('bueno') || estadoLower.includes('funcionando')) {
+                    if (estadoLower.includes('disponible') || estadoLower.includes('asignado')) {
                         displayValue = `<span class="tag good">${escapeHtml(value)}</span>`;
-                    } else if (estadoLower.includes('dañado') || estadoLower.includes('malo') || estadoLower.includes('en reparación')) {
-                        displayValue = `<span class="tag warn">${escapeHtml(value)}</span>`;
                     } else {
-                        displayValue = escapeHtml(value);
+                        displayValue = `<span class="tag warn">${escapeHtml(value)}</span>`;
                     }
                 }
                 html += `
@@ -294,12 +296,10 @@
                 `;
             });
 
-            html += `</div>`; // cierre details-list
-
+            html += `</div>`; 
             document.getElementById('resultado').innerHTML = html;
         }
 
-        // Pequeña función de escape para evitar inyección al montar HTML
         function escapeHtml(str) {
             if (!str) return '';
             return String(str)
@@ -310,7 +310,6 @@
                 .replace(/'/g, '&#39;');
         }
 
-        // Iniciar la carga
         cargarDatos();
     </script>
 </body>
